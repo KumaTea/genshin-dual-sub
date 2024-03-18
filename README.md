@@ -2,6 +2,8 @@
 
 原神双语字幕
 
+https://github.com/KumaTea/genshin-dual-sub/assets/36222458/dddd16ec-64ef-47cc-b01e-cb56796ca30e
+
 * 灵感来源 [qew21 / GI-Subtitles](https://github.com/qew21/GI-Subtitles)
 * 数据来源 [Dimbreath / AnimeGameData](https://gitlab.com/Dimbreath/AnimeGameData/-/tree/main/TextMap)
 
