@@ -1,5 +1,4 @@
 import json
-from tqdm import tqdm
 from share.session import config
 
 
@@ -20,9 +19,10 @@ class LevInfo:
     def load(self):
         with open(map_file, 'r', encoding='utf-8') as f:
             self.map = json.load(f)
-        pbar = tqdm(self.map)
-        pbar.set_description('Building ReversedMap...')
-        for key in pbar:
+        # pbar = tqdm(self.map)
+        # pbar.set_description('Building ReversedMap...')
+        # for key in pbar:
+        for key in self.map:
             len_key = len(key) if len(key) < 100 else 100
             if len_key not in self.len_map:
                 self.len_map[len_key] = {}

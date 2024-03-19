@@ -15,6 +15,8 @@ screen_height = ctypes.windll.user32.GetSystemMetrics(1)
 
 
 def grab_screenshot(left: int, top: int, right: int, bottom: int) -> np.ndarray:
+    if not right or not bottom:
+        return np.zeros((bottom - top, right - left, 3), dtype=np.uint8)
     left = max(0, left)
     top = max(0, top)
     right = min(screen_width, right)

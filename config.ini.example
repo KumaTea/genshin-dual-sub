@@ -1,6 +1,7 @@
 ; ini 文件的注释使用英文分号
 
 [general]
+
 data_path = data
 
 ; 屏幕分辨率
@@ -10,19 +11,38 @@ height = 1440
 ; 字幕窗口高度
 ovl_h = 120
 
+; 字幕窗口刷新率
+ovl_fps = 10
+
+; 原始语言，即游戏内语言
+; src_lang = zh-cn
+; not implemented
+
+; 目标语言，即显示第二字幕语言
+dst_lang = ja-jp
+
+
 [game]
+
 nickname = KumaTea
+; 主角性别
 male = 1
 ; '1', 'yes', 'true', 'on'
 ; https://stackoverflow.com/questions/12467731
 
+; 游戏分辨率
+; 默认值，理论上可自动检测
 resolution = 2560x1080
+
 data_path = D:\Games\Genshin Impact\Genshin Impact Game\YuanShen_Data
 
+
 [intervals]
+
 ; 循环任务间隔
 ; 根据电脑性能自行调整
-genshin_info = 30
-talking = 5
+genshin_info = 5
+genshin_fg = 5
+talking = 2
 dialog = 1
 draw = 0.1

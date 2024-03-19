@@ -48,3 +48,7 @@ def get_no_title_coordinates(hwnd: int) -> tuple[int, int, int, int]:
     title_offset = (bottom - top - c_bottom) - window_offset
     new_rect = left + window_offset, top + title_offset, right - window_offset, bottom - window_offset
     return new_rect
+
+
+def get_foreground_window_title() -> str:
+    return win32gui.GetWindowText(win32gui.GetForegroundWindow())

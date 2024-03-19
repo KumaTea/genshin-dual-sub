@@ -1,23 +1,31 @@
 # conda available
 
 # required by paddleocr
-lmdb
-tqdm
-lxml
-numpy
-cython
-pyyaml
-shapely
-openpyxl
-attrdict
-patch-ng
-pyclipper
-rapidfuzz
-premailer
-scikit-image
-Pillow>=10.0.0
 
-# --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle/
+# install this first
+# or pip will fail building
+patch-ng
+
+# lmdb
+# tqdm
+# lxml
+numpy
+# cython
+# pyyaml
+# shapely
+# openpyxl
+# attrdict
+# patch-ng
+# pyclipper
+# rapidfuzz
+# premailer
+# scikit-image
+# Pillow>=10.0.0
+
+# this is available in conda but with too many obsolete dependencies
+# imgaug
+
+# conda install --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle/
 paddlepaddle
 
 # others
@@ -26,13 +34,9 @@ pywin32
 pykakasi
 apscheduler
 
-# this is available in conda but with too many obsolete dependencies
-imgaug
-
 # dev only
 Levenshtein
 
 # pip only
-
 dxcam
 paddleocr

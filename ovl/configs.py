@@ -12,7 +12,11 @@ rects = {
     '1920x1080': (0, 0, 1920, 120),
 }
 
-# FONT_PATH = config['game']['data_path'] + '\StreamingAssets\MiHoYoSDKRes\HttpServerResources\font\zh-cn.ttf'
-FONT_PATH = config['game']['data_path'] + r'\StreamingAssets\MiHoYoSDKRes\HttpServerResources\font\ja-jp.ttf'
+lang = config['general']['dst_lang']
+FONT_PATH = (
+    config['game']['data_path'] +
+    '\\StreamingAssets\\MiHoYoSDKRes\\HttpServerResources\\font\\' +
+    f'{lang}.ttf'
+)
 
-FPS = 10
+FPS = int(config['general']['ovl_fps'])

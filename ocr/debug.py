@@ -1,11 +1,11 @@
-from ocr import *
 import numpy as np
+from ocr.ocr import *
 from PIL import Image
-from configs import *
-from manager import *
-from session import *
-from wintools import *
-from screenshot import *
+from ocr.configs import *
+from ocr.manager import *
+from ocr.session import *
+from ocr.wintools import *
+from ocr.screenshot import *
 from paddleocr import draw_ocr
 
 

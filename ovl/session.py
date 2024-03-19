@@ -15,6 +15,6 @@ overlay = Overlay()
 # text config
 font = pygame.font.Font(FONT_PATH, 36)
 ruby_font = pygame.font.Font(FONT_PATH, 18)
-rect = pygame.Rect(*rects[config['game']['resolution']])
+rect = pygame.Rect(*rects[f"{config['general']['width']}x{config['general']['height']}"])
 
 clock = pygame.time.Clock()

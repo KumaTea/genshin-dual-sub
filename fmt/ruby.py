@@ -133,3 +133,21 @@ def magic_ruby_to_pair(text: str) -> list[list[str, str]]:
         output.append([text[last_ruby_end:], ''])
 
     return output
+
+
+def combine_rubies(rubies: list[list[str, str]]) -> list[list[str, str]]:
+    # input: [['超', 'ちょう'], ['最強', 'さいきょう'], ['の', ''], ['リーダー', ''], ['級', 'きゅう'], ['戦力', 'せんりょく']]
+    # output: [['超最強', 'ちょうさいきょう'], ['のリーダー', ''], ['級戦力', 'きゅうせんりょく']]
+    output = []
+    for ruby in rubies:
+        if not output:
+            output.append(ruby)
+            continue
+        last_is_ruby = bool(output[-1][1])
+        this_is_ruby = bool(ruby[1])
+        if last_is_ruby == this_is_ruby:
+            output[-1][0] += ruby[0]
+            output[-1][1] += ruby[1]
+        else:
+            output.append(ruby)
+    return output

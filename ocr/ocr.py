@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from ocr.configs import paddings
 from ocr.session import gi, ppocr
@@ -93,7 +94,7 @@ def cut_long_textbox(box: list[list[float, float]], threshold: int = 320, max_pa
     # paddleocr cannot detect long textbox
     # maximum width is 320
 
-    # [[19.0, 12.0], [1260.0, 12.0], [1260.0, 42.0], [19.0, 42.0]]
+    # [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
     left = box[0][0]
     top = box[0][1]
     right = box[2][0]
@@ -118,6 +119,16 @@ def cut_long_textbox(box: list[list[float, float]], threshold: int = 320, max_pa
             [box_left, bottom],
         ])
     return cut_boxes
+
+
+def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.05) -> bool:
+    # box = [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
+    # image_size = [1920, 1080]
+    center_x = (box[0][0] + box[1][0]) / 2
+    # center_y = (box[0][1] + box[2][1]) / 2
+    image_width = image_size[1]
+    # image_height = image_size[0]
+    return abs(center_x - image_width / 2) < tolerance * image_width
 
 
 def combine_text_core(text1: str, text2: str) -> str:
@@ -192,6 +203,11 @@ def do_ocr(image: np.ndarray) -> str:
 
     text_boxes = get_textbox(image)
     if not text_boxes:
+        return ''
+
+    done_print = textbox_at_center(text_boxes[0], image.shape[:2])
+    if not done_print:
+        logging.warning(f'[OCR]\t因为识别对话框未居中，我猜字还没出全')
         return ''
 
     new_boxes = []

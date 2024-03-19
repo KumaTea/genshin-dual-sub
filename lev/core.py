@@ -1,4 +1,5 @@
 import time
+import logging
 import Levenshtein
 from lev.session import lev
 from fmt.handler import fmt_handler
@@ -34,6 +35,7 @@ def search(query: str) -> None:
     d = Levenshtein.distance(query, lev.last_query)
     if len(query) / d < 0.1:
         # too similar
+        logging.warning(f'[LEV]\tToo similar! {query=}, {lev.last_query=}, {d=}')
         return None
 
     lev.last_query = query
@@ -70,6 +72,7 @@ def search(query: str) -> None:
         theoretical_minimum_distance += 1
         if theoretical_minimum_distance >= distance:
             # no need to continue
+            logging.warning(f'[LEV]\tNo need to continue! {query=}, {distance=}, {theoretical_minimum_distance=}')
             break
 
     if lev.last_result != best_result:
