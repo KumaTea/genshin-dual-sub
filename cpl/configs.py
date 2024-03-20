@@ -59,7 +59,7 @@ Frequency	Variable
 1	{PLAYERAVATARSEXPRO[INFO_MALE_PRONOUN_BOYA|INFO_FEMALE_PRONOUN_GIRLC]}
 """
 
-male = config['game']['male']
+male = int(config['game']['male'])
 
 pronouns_zh = {
     'NICKNAME': nickname,

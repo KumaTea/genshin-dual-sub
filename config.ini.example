@@ -8,12 +8,6 @@ data_path = data
 width = 2560
 height = 1440
 
-; 字幕窗口高度
-ovl_h = 120
-
-; 字幕窗口刷新率
-ovl_fps = 10
-
 ; 原始语言，即游戏内语言
 ; src_lang = zh-cn
 ; not implemented
@@ -27,8 +21,7 @@ dst_lang = ja-jp
 nickname = KumaTea
 ; 主角性别
 male = 1
-; '1', 'yes', 'true', 'on'
-; https://stackoverflow.com/questions/12467731
+; True: 1 / False: 0
 
 ; 游戏分辨率
 ; 默认值，理论上可自动检测
@@ -46,3 +39,16 @@ genshin_fg = 5
 talking = 2
 dialog = 1
 draw = 0.1
+
+
+[overlay]
+
+; 字幕窗口高度
+ovl_h = 120
+
+; 字幕窗口刷新率
+ovl_fps = 10
+
+; 字体大小
+font_size = 36
+ruby_size = 18

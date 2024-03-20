@@ -19,4 +19,4 @@ FONT_PATH = (
     f'{lang}.ttf'
 )
 
-FPS = int(config['general']['ovl_fps'])
+FPS = int(config['overlay']['ovl_fps'])

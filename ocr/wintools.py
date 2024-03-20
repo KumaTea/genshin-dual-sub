@@ -1,8 +1,3 @@
-# tools.py will result in the following error:
-# ImportError: cannot import name 'get_window_handle' from 'tools'
-# (...\Lib\site-packages\paddleocr\tools/__init__.py)
-
-
 import ctypes
 import win32gui
 import numpy as np

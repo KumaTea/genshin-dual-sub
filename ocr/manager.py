@@ -1,18 +1,39 @@
 import time
 import logging
+import numpy as np
 from ocr.session import gi
+from ocr.ocr import do_ocr  # , do_ocr_raw
+from typing import Optional
+from ocr.imgtools import has_color
 from lev.handler import lev_handler
 from ovl.handler import ovl_handler
-from ocr.ocr import do_ocr, do_ocr_raw
 from ocr.format import format_ocr_output
 from ocr.screenshot import grab_screenshot
 from share.session import scheduler, config
-from ocr.configs import speaker_area, dialog_area
+from ocr.configs import dialog_area  # , speaker_area
 from ocr.wintools import get_window_handle, get_no_title_coordinates, crop_image, get_foreground_window_title
 
 
 genshin_titles = {'原神', 'Genshin Impact'}
 valid_resolutions = {'2560x1440', '2560x1080', '1920x1080'}
+speaker_color = (255, 195, 0)
+
+
+def take_screenshot() -> Optional[np.ndarray]:
+    # make a screenshot handler
+    # to avoid taking screenshots too frequently
+
+    # now = time.time()
+    if time.time() - gi.last_shot < 1:
+        return gi.screenshot
+
+    image = grab_screenshot(*gi.coords)
+    if image is None or not image.any():
+        return gi.screenshot
+
+    gi.screenshot = image
+    gi.last_shot = time.time()
+    return image
 
 
 def check_genshin_info() -> int:
@@ -64,17 +85,23 @@ def check_talking() -> bool:
         talking = False
         reason = '不在前台'
     else:
-        image = grab_screenshot(*gi.coords)
+        # image = grab_screenshot(*gi.coords)
+        image = take_screenshot()
         if image is None or not image.any():
             # talking = False
             # reason = '截图失败'
             # don't change state
-            # logging.warning(f'[OCR]\t截图失败: {gi.coords=}, {image=}')
+            # logging.warning(f'[OCR]\t截图失败: {image=}')
             return gi.talking
         else:
-            result = do_ocr_raw(crop_image(image, speaker_area[gi.resolution]))
-            talking = bool(result)
-            reason = 'OCR结果'
+            # result = do_ocr_raw(crop_image(image, speaker_area[gi.resolution]))
+            # talking = bool(result)
+
+            # not using OCR
+            # checking if the color of the speaker name exists
+            # reducing 99% of time
+            talking = has_color(image, color=speaker_color)
+            reason = '检测对话区角色名称'
 
     before = gi.talking
     if talking == before:
@@ -93,7 +120,8 @@ def get_dialog_text() -> str:
     if not gi.talking:
         return ''
 
-    image = grab_screenshot(*gi.coords)
+    # image = grab_screenshot(*gi.coords)
+    image = take_screenshot()
     if image is None or not image.any():
         return ''
     return do_ocr(crop_image(image, dialog_area[gi.resolution]))
@@ -112,13 +140,14 @@ def send_dialog_text() -> None:
     if not text:
         return None
     text = format_ocr_output(text)
-    logging.warning(f'\r[OCR]\t对话文本：{text}')
+    logging.warning(f'[OCR]\t对话文本：{text}')
     return lev_handler(text)
 
 
 def add_ocr_jobs() -> None:
     # do it now
     check_genshin_info()
+    check_genshin_foreground()
     check_talking()
     send_dialog_text()
 

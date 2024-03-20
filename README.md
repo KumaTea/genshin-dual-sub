@@ -17,11 +17,14 @@ https://github.com/KumaTea/genshin-dual-sub/assets/36222458/dddd16ec-64ef-47cc-b
 
 ### 原理
 
-1. 格式化原始文本数据
-2. PaddleOCR 识别游戏内字幕
-3. Levenshtein 距离计算字幕相似度
-4. Pykakasi 注音 + 再次格式化匹配字幕数据
-5. Pygame 显示字幕
+| 步骤 | 工具 | 说明 |
+|---|---|---|
+| 0 | | [格式化](https://github.com/KumaTea/genshin-dual-sub/tree/main/cpl)原始文本数据 | |
+| 1 | [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) | [识别](https://github.com/KumaTea/genshin-dual-sub/tree/main/ocr)游戏内字幕 |
+| 2 | [Levenshtein](https://github.com/rapidfuzz/Levenshtein) | [计算](https://github.com/KumaTea/genshin-dual-sub/tree/main/lev)字幕相似度 |
+| 3.1 | [Pykakasi](https://codeberg.org/miurahr/pykakasi) | [注音](https://github.com/KumaTea/genshin-dual-sub/tree/main/fmt) |
+| 3.2 | | 再次格式化匹配字幕数据 |
+| 4 | [Pygame](https://github.com/pygame/pygame) | [显示](https://github.com/KumaTea/genshin-dual-sub/tree/main/ovl)字幕 |
 
 ### 开发计划
 
@@ -29,3 +32,4 @@ https://github.com/KumaTea/genshin-dual-sub/assets/36222458/dddd16ec-64ef-47cc-b
 - [ ] 允许移动字幕位置
 - [ ] 支持更多语言
 - [ ] 支持同时标注官方上标及读音
+- [ ] 格式化图片 (灰度 / 提取仅白色) 以优化识别效果

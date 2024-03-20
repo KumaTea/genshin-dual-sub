@@ -5,6 +5,7 @@ from ocr.configs import *
 from ocr.manager import *
 from ocr.session import *
 from ocr.wintools import *
+from ocr.imgtools import *
 from ocr.screenshot import *
 from paddleocr import draw_ocr
 

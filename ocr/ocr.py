@@ -128,7 +128,10 @@ def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int]
     # center_y = (box[0][1] + box[2][1]) / 2
     image_width = image_size[1]
     # image_height = image_size[0]
-    return abs(center_x - image_width / 2) < tolerance * image_width
+    at_center = abs(center_x - image_width / 2) < tolerance * image_width
+    if not at_center:
+        logging.warning(f'[OCR]\t对话框不在中央: x={center_x}, w={image_width}, r={abs(center_x - image_width / 2) / image_width:.2f}')
+    return at_center
 
 
 def combine_text_core(text1: str, text2: str) -> str:

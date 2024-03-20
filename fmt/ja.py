@@ -2,7 +2,7 @@ from share.session import config
 
 
 nickname = config['game']['nickname']
-male = config['game']['male']
+male = int(config['game']['male'])
 
 pronouns_ja = {
     # unverified

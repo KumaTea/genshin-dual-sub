@@ -9,11 +9,11 @@ from pygame._sdl2.video import Window
 pygame.init()
 
 # set resolution
-screen = pygame.display.set_mode((int(config['general']['width']), int(config['general']['ovl_h'])), pygame.NOFRAME)
+screen = pygame.display.set_mode((int(config['general']['width']), int(config['overlay']['ovl_h'])), pygame.NOFRAME)
 
 # set position
 window = Window.from_display_module()
-window.position = (0, int(config['general']['height']) - int(config['general']['ovl_h']))
+window.position = (0, int(config['general']['height']) - int(config['overlay']['ovl_h']))
 
 
 # make window transparent

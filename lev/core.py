@@ -72,7 +72,7 @@ def search(query: str) -> None:
         theoretical_minimum_distance += 1
         if theoretical_minimum_distance >= distance:
             # no need to continue
-            logging.warning(f'[LEV]\tNo need to continue! {query=}, {distance=}, {theoretical_minimum_distance=}')
+            logging.warning(f'[LEV]\tNo need to continue! q={query}, d={distance}, th_min={theoretical_minimum_distance}')
             break
 
     if lev.last_result != best_result:

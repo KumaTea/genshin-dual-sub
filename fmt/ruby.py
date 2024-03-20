@@ -4,7 +4,7 @@ from share.assets import ruby_pattern, ruby_content_pattern
 
 
 def result_to_index(result: dict) -> tuple[str, list[tuple[float, str]]]:
-    # {'orig': '古い', 'hira': 'ふるい', 'kana': 'フルイ', 'hepburn': 'furui', 'kunrei': 'furui', 'passport': 'furui'}
+    # {'orig': '古い', 'hira': 'ふるい', ...}
     output = ''
     rubies = []
     orig = result['orig']
