@@ -12,9 +12,7 @@ blacklist = [
     '$['
 ]
 
-remove_list = [
-    f'{{{i}}}' for i in range(10)
-]
+remove_list = ['{%d}' % i for i in range(10)]
 remove_list.append('\\n')  # yes
 
 # https://github.com/mrzjy/GenshinDialog

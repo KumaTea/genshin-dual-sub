@@ -2,40 +2,13 @@
 
 
 from typing import Optional
+from share.assets import ruby_pattern
 from cpl.configs import blacklist, pronouns_zh, remove_list
-from share.assets import replace_pattern, html_tag_pattern, ruby_pattern
+from share.format import replace_pronoun, remove_html_tags, remove_from_list
 
 
 def has_bl(text: str) -> bool:
     return any(word in text.lower() for word in blacklist)
-
-
-def replace_pronoun(text: str, pronouns: dict[str, str]) -> str:
-    if not text.startswith('#'):
-        return text
-
-    text = text[1:]
-    match_items = replace_pattern.findall(text)
-    for item in match_items:
-        matched = False
-        for key in pronouns:
-            if key in item:
-                text = text.replace(item, pronouns[key])
-                matched = True
-                break
-        if not matched:
-            text = text.replace(item, ' ')
-    return text
-
-
-def remove_html_tags(text: str) -> str:
-    return html_tag_pattern.sub('', text)
-
-
-def remove_others(text: str) -> str:
-    for item in remove_list:
-        text = text.replace(item, '')
-    return text
 
 
 def extract_ruby(text: str) -> str:
@@ -56,6 +29,6 @@ def format_text(text: str) -> Optional[str]:
 
     text = replace_pronoun(text, pronouns_zh)
     text = remove_html_tags(text)
-    text = remove_others(text)
+    text = remove_from_list(text, remove_list)
     text = extract_ruby(text)
     return text.strip()
