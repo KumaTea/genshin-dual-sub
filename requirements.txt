@@ -40,4 +40,4 @@ Levenshtein
 # pip only
 dxcam
 
-paddleocr>2.7.0.3
+paddleocr>2.7.0.3,!=2.7.4,!=2.7.5

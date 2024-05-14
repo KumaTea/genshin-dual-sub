@@ -1,12 +1,15 @@
+from cpl.process import init
+
+init()
+
+
 from ovl.init import pygame
 from ovl.configs import FPS
-from cpl.process import init
 from ovl.session import clock
 from ocr.manager import add_ocr_jobs
 from ovl.manager import add_ovl_jobs
 
 
-init()
 add_ocr_jobs()
 add_ovl_jobs()
 

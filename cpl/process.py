@@ -1,8 +1,8 @@
 import os
 import json
 from tqdm import tqdm
-from share.session import config
 from cpl.format import format_text
+from share.session import config, logging
 
 
 data_path = config['general']['data_path']
@@ -10,6 +10,29 @@ output_path = f'{data_path}/output'
 text_map_file = f'{data_path}/TextMapCHS.json'
 
 os.makedirs(output_path, exist_ok=True)
+
+TEXT_MAPS_REPO = 'https://gitlab.com/Dimbreath/AnimeGameData/-/tree/master/TextMap'
+NO_TEXT_MAPS_MSG = (
+    f'\n'
+    f'TextMapCHS.json not found.\n'
+    f'Please download it from {TEXT_MAPS_REPO},\n'
+    f'and place it in {data_path}.\n'
+    f'P.S. I cannot download it for you because the author does not specify a license.\n'
+    f'Press Enter when you finish that...\n'
+    f'\n'
+    f'未找到 TextMapCHS.json。\n'
+    f'请从 {TEXT_MAPS_REPO} 下载，\n'
+    f'并放置于 {data_path} 中。\n'
+    f'注：我无法为您下载，因为作者尚未指定一个允许这么做的协议。\n'
+    f'下载完成后按 Enter...\n'
+)
+NO_TEXT_MAPS_MSG = '\n'.join(f'  {i}' for i in NO_TEXT_MAPS_MSG.splitlines())
+
+
+def ensure_text_maps():
+    while not os.path.exists(text_map_file):
+        logging.error(NO_TEXT_MAPS_MSG)
+        input('\n')
 
 
 def get_reversed_map():
@@ -36,4 +59,6 @@ def process():
 def init():
     if os.path.exists(f'{output_path}/ReversedMap.json'):
         return None
+
+    ensure_text_maps()
     process()

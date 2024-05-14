@@ -1,5 +1,5 @@
                Kuma Modified GNU General Public License
-                      Version 1, 19 February 2024
+                      Version 2, 18 April 2024
 
 
 This document represents a modified and extended version of the
@@ -25,11 +25,19 @@ groups of individuals:
 - GF2D: Individuals who themselves or whose direct relatives
         possess significant political positions or have substantial
         economic assets.
-- GXLJJ: Individuals holding a master's degree or higher, or have
-        studied in any university ranked within the top 300 of
-        QS World University Rankings, or whose GPA is above
-        GPA(x) = 4 - 0.7 * ln(x), where x is the number of years
-        since admission and ln is the natural logarithm.
+- GXLJJ: Individuals who satisfy any of the following criteria:
+        (1) possession of a master's degree, obtained either through
+        exemption from, or by successful completion of a FIRST
+        postgraduate entrance examination; (2) possession of a
+        doctoral degree; (3) education at any institution ranked
+        within the top 300 according to the QS World University
+        Rankings; (4) education under the auspices of Project 985,
+        Project 211, or at institutions located outside of Mainland
+        China; (5) GPA surpassing the threshold defined by
+        GPA(x) = 4 - 0.7 * ln(x), where x denotes the number of years
+        since admission and ln represents the natural logarithm;
+        (6) receipt of any scholarship awarded on the basis of
+        academic merit.
 
 3. Exceptions to License
 
