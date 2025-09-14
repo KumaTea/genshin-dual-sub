@@ -18,10 +18,16 @@ dst_lang = ja-jp
 
 [game]
 
-nickname = KumaTea
+nickname = 旅行者
+
 ; 主角性别
-male = 1
+is_male = 1
 ; True: 1 / False: 0
+
+; 散兵的名字
+wanderer = 流浪者
+; 纳塔小龙的名字
+little_one = 小家伙
 
 ; 游戏分辨率
 ; 默认值，理论上可自动检测

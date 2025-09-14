@@ -6,6 +6,7 @@ from ocr.gs.screen import take_screenshot
 
 
 speaker_color = (255, 195, 0)
+idle_speaker_color = (241, 183, 3)
 
 
 def check_talking() -> bool:
@@ -31,8 +32,10 @@ def check_talking() -> bool:
             # not using OCR
             # checking if the color of the speaker name exists
             # reducing 99% of time
-            talking = has_color(image, color=speaker_color)
-            reason = '检测对话区角色名称'
+            chat_talking = has_color(image, color=speaker_color)
+            idle_talking = has_color(image, color=idle_speaker_color)
+            talking = chat_talking or idle_talking
+            reason = '检测对话区角色名称' + '' if not talking else (' (' + ('对话中' if chat_talking else '闲聊中') + ')')
 
     before = gi.talking
     if talking == before:

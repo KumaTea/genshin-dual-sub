@@ -4,7 +4,7 @@ from ocr.wintools import get_window_handle, get_no_title_coordinates, get_foregr
 
 
 genshin_titles = {'原神', 'Genshin Impact'}
-valid_resolutions = {'2560x1440', '2560x1080', '1920x1080'}
+valid_resolutions = {'3840x2160', '3840x1600', '2560x1440', '2560x1080', '1920x1080'}
 
 
 def check_genshin_info() -> int:

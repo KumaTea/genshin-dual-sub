@@ -1,4 +1,6 @@
 import time
+import paddle
+import psutil
 import numpy as np
 from paddleocr import PaddleOCR
 from share.session import config
@@ -26,5 +28,6 @@ gi = GenshinInfo()
 
 ppocr = PaddleOCR(
     lang='ch',
+    use_gpu=paddle.device.is_compiled_with_cuda() and psutil.virtual_memory().total > 16 * 1024 ** 3,
     use_angle_cls=False,
 )

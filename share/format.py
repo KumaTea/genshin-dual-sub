@@ -2,7 +2,7 @@ from share.session import config
 from share.assets import replace_pattern, html_tag_pattern, pronoun_choice_pattern
 
 
-male = int(config['game']['male'])
+is_male = int(config['game']['is_male'])
 
 
 def choose_pronoun(text: str) -> str:
@@ -16,7 +16,7 @@ def choose_pronoun(text: str) -> str:
 
     choices = find_results[0]
     raw_text = '{M#%s}{F#%s}' % choices
-    pronoun = choices[0] if male else choices[1]
+    pronoun = choices[0] if is_male else choices[1]
     return text.replace(raw_text, pronoun)
 
 

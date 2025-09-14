@@ -121,7 +121,7 @@ def cut_long_textbox(box: list[list[float, float]], threshold: int = 320, max_pa
     return cut_boxes
 
 
-def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.05) -> bool:
+def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.2) -> bool:
     # box = [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
     # image_size = [1920, 1080]
     center_x = (box[0][0] + box[1][0]) / 2
@@ -213,15 +213,18 @@ def do_ocr(image: np.ndarray) -> str:
         logging.warning(f'[OCR]\t因为识别对话框未居中，我猜字还没出全')
         return ''
 
-    new_boxes = []
-    for box in text_boxes:
-        new_boxes.extend(
-            cut_long_textbox(
-                box,
-                # max_padding=int(paddings[gi.resolution] / scales[gi.resolution])
-                max_padding=paddings[gi.resolution]
-            )
-        )
+    # new_boxes = []
+    # for box in text_boxes:
+    #     new_boxes.extend(
+    #         cut_long_textbox(
+    #             box,
+    #             # max_padding=int(paddings[gi.resolution] / scales[gi.resolution])
+    #             max_padding=paddings[gi.resolution]
+    #         )
+    #     )
+
+    # skip this
+    new_boxes = text_boxes
 
     images = []
     for box in new_boxes:

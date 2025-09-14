@@ -6,10 +6,13 @@
 # or pip will fail building
 patch-ng
 
+numpy<2.0.0a0
+# below will be installed
+# as numpy's deps
+
 # lmdb
 # tqdm
 # lxml
-numpy
 # cython
 # pyyaml
 # shapely
@@ -22,22 +25,29 @@ numpy
 # scikit-image
 # Pillow>=10.0.0
 
-# this is available in conda but with too many obsolete dependencies
-# imgaug
+psutil
 
-# conda install --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle/
-paddlepaddle
+# conda install --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle
+paddlepaddle<3.0.0a0
+# paddlepaddle-gpu
+# only if RAM > 16G
 
 # others
+dxcam
+imgaug
+
 pygame
 pywin32
 pykakasi
-apscheduler<4
+apscheduler<4.0.0a0
 
 # dev only
 Levenshtein
 
+# conda create -n gsds "albucore==0.0.13" "albumentations==1.4.10" "apscheduler<4.0.0a0" "numpy<2.0.0a0" "paddlepaddle<3.0.0a0" beautifulsoup4 cython dxcam fire imgaug Levenshtein patch-ng psutil pyclipper pygame pykakasi python-docx python-lmdb pywin32 pyyaml requests tqdm --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle
+
+# ============
+
 # pip only
-dxcam
 
 paddleocr>2.7.0.3,!=2.7.4,!=2.7.5

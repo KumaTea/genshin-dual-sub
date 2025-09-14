@@ -22,9 +22,13 @@ def has_color(
         color: tuple[int, int, int] = None,
         # color_str: str = 'ffc300',
         color_str: str = None,
+        tolerance: int = 2,
         threshold: int = 127
 ) -> bool:
     # return True if the color exists in the image
     color = color or tuple(int(color_str[i:i + 2], 16) for i in (0, 2, 4))
-    mask = cv2.inRange(image, color, color)
+    upper_color = tuple(min(255, c + tolerance) for c in color)
+    lower_color = tuple(max(0, c - tolerance) for c in color)
+    # mask = cv2.inRange(image, color, color)
+    mask = cv2.inRange(image, lower_color, upper_color)
     return cv2.countNonZero(mask) > threshold
