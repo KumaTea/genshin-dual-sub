@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from ocr.configs import paddings
+# from ocr.configs import paddings
 from ocr.session import gi, ppocr
 from ocr.wintools import crop_image
 
@@ -121,7 +121,7 @@ def cut_long_textbox(box: list[list[float, float]], threshold: int = 320, max_pa
     return cut_boxes
 
 
-def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.2) -> bool:
+def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.05) -> bool:
     # box = [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
     # image_size = [1920, 1080]
     center_x = (box[0][0] + box[1][0]) / 2

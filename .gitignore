@@ -1,4 +1,5 @@
 .idea
+.venv
 data
 config.ini
 __pycache__

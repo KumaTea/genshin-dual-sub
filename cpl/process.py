@@ -1,8 +1,14 @@
 import os
 import json
-from tqdm import tqdm
 from cpl.format import format_text
 from share.session import config, logging
+
+
+try:
+    from tqdm import tqdm
+    has_tqdm = True
+except ImportError:
+    has_tqdm = False
 
 
 data_path = config['general']['data_path']
@@ -46,7 +52,13 @@ def get_reversed_map():
     with open(text_map_file, 'r', encoding='utf-8') as f:
         text_map = json.load(f)
 
-    for key, value in tqdm(text_map.items()):
+    if has_tqdm:
+        items = text_map.items()
+    else:
+        items = list(text_map.items())
+        logging.warning('tqdm not found, progress bar disabled. Install it via "pip install tqdm" to enable it.')
+
+    for key, value in items:
         new_key = format_text(value)
         if new_key:
             reversed_map[new_key] = key

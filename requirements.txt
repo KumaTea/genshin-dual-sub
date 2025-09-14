@@ -6,7 +6,9 @@
 # or pip will fail building
 patch-ng
 
-numpy<2.0.0a0
+# numpy<2.0.0a0
+# add by onnxocr
+
 # below will be installed
 # as numpy's deps
 
@@ -27,17 +29,19 @@ numpy<2.0.0a0
 
 psutil
 
+onnxocr
+
 # conda install --channel https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle
-paddlepaddle<3.0.0a0
+# paddlepaddle<3.0.0a0
 # paddlepaddle-gpu
 # only if RAM > 16G
 
 # others
 dxcam
-imgaug
+# imgaug
 
 pygame
-pywin32
+pywin32  # import win32api
 pykakasi
 apscheduler<4.0.0a0
 
@@ -50,4 +54,4 @@ Levenshtein
 
 # pip only
 
-paddleocr>2.7.0.3,!=2.7.4,!=2.7.5
+# paddleocr>2.7.0.3,!=2.7.4,!=2.7.5

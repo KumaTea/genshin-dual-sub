@@ -16,3 +16,6 @@ logging.getLogger('ppocr').setLevel(logging.ERROR)
 
 scheduler = BackgroundScheduler()
 scheduler.start()
+
+# disable apscheduler logs
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
