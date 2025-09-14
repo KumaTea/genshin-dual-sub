@@ -1,0 +1,16 @@
+[project]
+name = "genshin-dual-sub"
+version = "1.0.0a0"
+description = "原神双语字幕"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "apscheduler<4.0.0a0",
+    "dxcam>=0.0.5",
+    "levenshtein>=0.25.1",
+    "onnxocr>=2025.5",
+    "psutil>=7.0.0",
+    "pygame>=2.6.1",
+    "pykakasi>=2.3.0",
+    "pywin32>=311",
+]

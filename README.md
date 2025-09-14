@@ -4,6 +4,14 @@
 
 ![preview](https://github.com/KumaTea/genshin-dual-sub/assets/36222458/dfb932e2-bbbd-49e6-80f7-1355dca98b3b)
 
+### 如何使用
+
+> [!WARNING]
+> 该项目还在开发的初期阶段，非常不稳定，当前仅供个人学习使用
+
+1. 安装 [uv](https://docs.astral.sh/uv/)
+2. `uv run python main.py`
+
 ### 亮点
 
 * 低占用 (<5% CPU)
@@ -13,7 +21,7 @@
 https://github.com/KumaTea/genshin-dual-sub/assets/36222458/dddd16ec-64ef-47cc-b01e-cb56796ca30e
 
 * 灵感来源 [qew21 / GI-Subtitles](https://github.com/qew21/GI-Subtitles)
-* 数据来源 [Dimbreath / AnimeGameData](https://gitlab.com/Dimbreath/AnimeGameData/-/tree/main/TextMap)
+* 数据来源 [Dimbreath / AnimeGameData](https://gitlab.com/Dimbreath/AnimeGameData/-/tree/master/TextMap)
 
 ### 原理
 
