@@ -3,6 +3,7 @@ import numpy as np
 # from ocr.configs import paddings
 from ocr.session import gi, ppocr
 from ocr.wintools import crop_image
+from ocr.imgtools import filter_white
 
 
 # max_right = dialog_area[config['game']['resolution']][2]
@@ -204,8 +205,12 @@ def do_ocr(image: np.ndarray) -> str:
     # DO NOT SCALE
     # WORSE PERFORMANCE
 
+    # filter white
+    image = filter_white(image)
+
     text_boxes = get_textbox(image)
     if not text_boxes:
+        logging.warning(f'[OCR]\t未识别到对话框！')
         return ''
 
     done_print = textbox_at_center(text_boxes[0], image.shape[:2])

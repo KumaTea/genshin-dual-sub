@@ -32,3 +32,12 @@ def has_color(
     # mask = cv2.inRange(image, color, color)
     mask = cv2.inRange(image, lower_color, upper_color)
     return cv2.countNonZero(mask) > threshold
+
+
+def filter_white(image: np.ndarray) -> np.ndarray:
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    lower_white = np.array([0, 0, 200])
+    upper_white = np.array([179, 25, 255])
+    mask = cv2.inRange(hsv, lower_white, upper_white)
+    result = cv2.bitwise_and(image, image, mask=mask)
+    return result

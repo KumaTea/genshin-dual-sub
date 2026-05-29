@@ -7,7 +7,7 @@ kks = pykakasi.kakasi()
 
 data_path = config['general']['data_path']
 output_path = f'{data_path}/output'
-ja_map_file = f'{data_path}/TextMapJP.json'
+ja_map_file = f'{output_path}/CombinedMapJP.json'
 
 # with open(ja_map_file, 'r', encoding='utf-8') as f:
 #     ja_map = json.load(f)

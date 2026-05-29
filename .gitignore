@@ -1,5 +1,7 @@
 .idea
 .venv
 data
+uv.lock
+debugs.py
 config.ini
 __pycache__

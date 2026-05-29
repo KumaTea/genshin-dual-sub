@@ -9,8 +9,8 @@ dependencies = [
     "dxcam>=0.0.5",
     "levenshtein>=0.25.1",
     "onnxocr>=2025.5",
-    "psutil>=7.0.0",
+    "psutil>=6.0.0",
     "pygame>=2.6.1",
     "pykakasi>=2.3.0",
-    "pywin32>=311",
+    "pywin32>=307",
 ]

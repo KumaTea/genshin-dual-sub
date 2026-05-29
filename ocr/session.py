@@ -1,6 +1,7 @@
 import time
 import psutil
 import numpy as np
+from ocr.configs import dialog_area
 from share.session import config, logging
 
 try:
@@ -38,8 +39,17 @@ if use_paddle:
     use_gpu = paddle.device.is_compiled_with_cuda() and psutil.virtual_memory().total > 16 * 1024 ** 3
 else:
     use_gpu = False
+
+# the shape of the dialog box is extremely narrow
+# we set the min height to avoid resizing the image
+# which is the default behavior of PaddleOCR
+
+dialog_height = dialog_area[gi.resolution][3] - dialog_area[gi.resolution][1]
+
 ppocr = PaddleOCR(
     lang='ch',
     use_gpu=use_gpu,
     use_angle_cls=False,
+    det_limit_side_len=dialog_height,
+    det_limit_type='min'
 )
