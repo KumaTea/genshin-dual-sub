@@ -1,18 +1,13 @@
 import ctypes
-import win32gui
-import numpy as np
+from ctypes import wintypes
 
+import win32gui
 
 DWMWA_EXTENDED_FRAME_BOUNDS = 9
 
 
-def crop_image(image: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
-    return image[box[1]:box[3], box[0]:box[2]]
-
-
 def get_window_handle(title: str) -> int:
-    hwnd = win32gui.FindWindow(None, title)
-    return hwnd
+    return win32gui.FindWindow(None, title)
 
 
 def get_borderless_coordinates(hwnd: int) -> tuple[int, int, int, int]:
@@ -21,28 +16,25 @@ def get_borderless_coordinates(hwnd: int) -> tuple[int, int, int, int]:
 
 def get_windowed_coordinates(hwnd: int) -> tuple[int, int, int, int]:
     # https://stackoverflow.com/a/13459850/10714490
-    get_win_attr = ctypes.windll.dwmapi.DwmGetWindowAttribute
-    rect = ctypes.wintypes.RECT()
-    get_win_attr(
-        ctypes.wintypes.HWND(hwnd),
-        ctypes.wintypes.DWORD(DWMWA_EXTENDED_FRAME_BOUNDS),
+    rect = wintypes.RECT()
+    ctypes.windll.dwmapi.DwmGetWindowAttribute(
+        wintypes.HWND(hwnd),
+        wintypes.DWORD(DWMWA_EXTENDED_FRAME_BOUNDS),
         ctypes.byref(rect),
-        ctypes.sizeof(rect)
+        ctypes.sizeof(rect),
     )
     return rect.left, rect.top, rect.right, rect.bottom
 
 
 def get_no_title_coordinates(hwnd: int) -> tuple[int, int, int, int]:
+    """去掉边框和标题栏后的客户区坐标。"""
     # https://stackoverflow.com/a/54707314/10714490
-    rect = win32gui.GetWindowRect(hwnd)
-    left, top, right, bottom = rect
-    client_rect = win32gui.GetClientRect(hwnd)
-    c_left, c_top, c_right, c_bottom = client_rect
+    left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+    _, _, client_right, client_bottom = win32gui.GetClientRect(hwnd)
 
-    window_offset = int((right - left - c_right) / 2)
-    title_offset = (bottom - top - c_bottom) - window_offset
-    new_rect = left + window_offset, top + title_offset, right - window_offset, bottom - window_offset
-    return new_rect
+    window_offset = int((right - left - client_right) / 2)
+    title_offset = (bottom - top - client_bottom) - window_offset
+    return left + window_offset, top + title_offset, right - window_offset, bottom - window_offset
 
 
 def get_foreground_window_title() -> str:

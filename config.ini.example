@@ -1,60 +1,101 @@
-; ini 文件的注释使用英文分号
+; 本文件由程序自动补全，注释使用英文分号
 
 [general]
-
+; 文本数据存放目录
 data_path = data
 
-; 屏幕分辨率
-width = 2560
-height = 1440
-
-; 原始语言，即游戏内语言
-; src_lang = zh-cn
-; not implemented
-
-; 目标语言，即显示第二字幕语言
+; 第二字幕语言：ja-jp / en-us / ko-kr / ...
 dst_lang = ja-jp
+
+; DEBUG / INFO / WARNING / ERROR
+log_level = INFO
 
 
 [game]
-
+; 游戏内昵称
 nickname = 旅行者
 
-; 主角性别
+; 主角性别 True: 1 / False: 0
 is_male = 1
-; True: 1 / False: 0
 
 ; 散兵的名字
 wanderer = 流浪者
+
 ; 纳塔小龙的名字
-little_one = 小家伙
+little_one = 小黑
 
-; 游戏分辨率
-; 默认值，理论上可自动检测
-resolution = 2560x1080
+; 游戏 YuanShen_Data / GenshinImpact_Data 目录，留空则自动查找
+data_path = 
 
-data_path = D:\Games\Genshin Impact\Genshin Impact Game\YuanShen_Data
+; 游戏分辨率，留空则自动检测
+resolution = 
 
 
 [intervals]
-
-; 循环任务间隔
-; 根据电脑性能自行调整
+; 检测游戏窗口的间隔（秒）
 genshin_info = 5
+
+; 检测游戏是否在前台的间隔（秒）
 genshin_fg = 5
-talking = 2
-dialog = 1
+
+; 检测是否在对话的间隔（秒）
+talking = 0.5
+
+; 识别对话文本的间隔（秒）
+dialog = 0.5
+
+; 重绘字幕的间隔（秒）
 draw = 0.1
 
 
 [overlay]
+; 字幕窗口左上角 X，-1 表示水平居中
+x = -1
+
+; 字幕窗口左上角 Y，-1 表示贴屏幕底部
+y = -1
+
+; 字幕窗口宽度，0 表示与屏幕同宽
+width = 0
 
 ; 字幕窗口高度
-ovl_h = 120
+height = 160
 
 ; 字幕窗口刷新率
-ovl_fps = 10
+fps = 10
 
-; 字体大小
-font_size = 36
-ruby_size = 18
+; 正文字号
+font_size = 72
+
+; 注音字号
+ruby_size = 36
+
+; 字体文件，留空则使用游戏自带字体
+font_path = 
+
+; 字幕颜色
+text_color = #ffffff
+
+; 字幕背景色
+bg_color = #000000
+
+; 字幕背景不透明度，0 = 全透明，100 = 纯色
+bg_opacity = 0
+
+; 1 = 鼠标穿透（不可拖动），0 = 可以拖动
+locked = 1
+
+; 是否显示注音
+show_ruby = 1
+
+; 是否同时显示游戏官方上标
+show_official_ruby = 1
+
+
+[download]
+; 是否允许自动下载文本数据，1 = 允许，0 = 每次询问
+allow_download = 0
+
+; 文本数据下载地址
+base_url = https://gitlab.com/Dimbreath/animegamedata2/-/raw/main/TextMap
+

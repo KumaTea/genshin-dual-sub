@@ -1,274 +1,210 @@
+"""对话文本识别。
+
+流程：滤白 -> 检测文本框 -> 合并同一行的框 -> 丢掉噪点 -> 居中校验 -> 批量识别。
+
+几个关键点：
+
+* 合并同一行的框时限制水平间距。检测器有时会把远处的亮色背景（雪地、灯光）
+  也框出来，不限距离就会把它和正文合并成一个横跨整屏的框，识别结果全是废话。
+* 原神的对话是逐字显现的，没打完的行不居中。所以先看框居不居中，
+  不居中就说明字还没出全，直接跳过这一帧。chat / idle 是每行各自居中，
+  逐行检查；type2 整块居中、行内左对齐（第二行天生靠左），只能检查整块。
+* 噪点框按"比最高的框矮多少"来丢。大世界里的 type2 字幕上下就贴着
+  发光图标和血条数字，阈值松了它们会被拼进识别结果。
+* 识别是批量做的。逐张调用会让推理引擎每次重新分配输入张量，
+  两行文本的开销几乎翻倍。
+"""
+
 import logging
+from typing import Optional
+
 import numpy as np
-# from ocr.configs import paddings
-from ocr.session import gi, ppocr
-from ocr.wintools import crop_image
-from ocr.imgtools import filter_white
+
+from ocr.imgtools import crop, filter_white
+from ocr.session import engine_call_lock, get_engine
+
+Box = list[list[float]]
+
+# 同一行的两个框，水平间距不超过行高的多少倍才合并
+MAX_MERGE_GAP_RATIO = 2.0
+# 框高低于最高框的多少比例就当噪点丢掉。
+# 正文换行时各行高度几乎一样（实测 49/54、51/56），而血条数字、
+# 图标残片只有正文的一半高，0.7 能把它们切干净。
+MIN_BOX_HEIGHT_RATIO = 0.7
+# 框宽小于行高的多少倍就当噪点丢掉
+MIN_BOX_WIDTH_RATIO = 0.5
 
 
-# max_right = dialog_area[config['game']['resolution']][2]
-# max_left = dialog_area[config['game']['resolution']][0]
+def box_bounds(box: Box) -> tuple[float, float, float, float]:
+    """四点框 -> (left, top, right, bottom)。检测器给的是四边形，取外接矩形。"""
+    xs = [point[0] for point in box]
+    ys = [point[1] for point in box]
+    return min(xs), min(ys), max(xs), max(ys)
 
 
-def is_same_line(box1: list, box2: list, img_size: tuple, threshold: float = 0.02):
-    # box1 = [[26.0, 635.0], [810.0, 635.0], [810.0, 657.0], [26.0, 657.0]]
-    # box2 = [[836.0, 636.0], [863.0, 636.0], [863.0, 655.0], [836.0, 655.0]]
-    # img_size = [1920, 1080]
-
-    # image_width = img_size[0]
-    # box1_right = (box1[1][0] + box1[2][0]) / 2
-    # box2_left = (box2[0][0] + box2[3][0]) / 2
-    # judge_0 = box1_right - box2_left > threshold * 5 * image_width
-    # if judge_0:  # 框1右边界 > 框2左边界 ==> 框1在框2右边
-    #     return False
-
-    image_height = img_size[1]
-    box1_y1 = (box1[0][1] + box1[1][1]) / 2  # 635
-    box1_y2 = (box1[2][1] + box1[3][1]) / 2  # 657
-    box2_y1 = (box2[0][1] + box2[1][1]) / 2  # 636
-    box2_y2 = (box2[2][1] + box2[3][1]) / 2  # 655
-    # box1_height = box1_y2 - box1_y1  # 22
-    # box2_height = box2_y2 - box2_y1  # 19
-    judge_1 = abs(box1_y1 - box2_y1) < threshold * image_height  # 1 < 0.02 * 1080 ==> True
-    judge_2 = abs(box1_y2 - box2_y2) < threshold * image_height  # 2 < 0.02 * 1080 ==> True
-    # judge_3 = abs(box1_height - box2_height) < threshold * image_height  # 3 < 0.02 * 1080 ==> True
-    return judge_1 and judge_2  # and judge_3
+def make_box(left: float, top: float, right: float, bottom: float) -> Box:
+    return [[left, top], [right, top], [right, bottom], [left, bottom]]
 
 
-def get_textbox(
-        image: np.ndarray
-) -> list[  # boxes
-        list[  # box
-            list[  # coord
-                float, float  # x, y
-            ]
-        ]
-]:
-    results = ppocr.ocr(image, det=True, rec=False, cls=False)
-    boxes = results[0]
-    # [[[90.0, 9.0], [405.0, 9.0], [405.0, 36.0], [90.0, 36.0]], [[1210.0, 9.0], [1556.0, 9.0], [1556.0, 36.0], [1210.0, 36.0]]]
-    if not boxes:
-        return []
+def is_same_line(box1: Box, box2: Box, overlap_ratio: float = 0.5) -> bool:
+    """两个框在垂直方向重叠超过较矮者的一半，就算同一行。
+
+    比原先"上下边界差值小于画面宽度的 2%"稳：那个写法在 4K 下容差有 60 多像素，
+    上下两行会被判成同一行。
+    """
+    _, top1, _, bottom1 = box_bounds(box1)
+    _, top2, _, bottom2 = box_bounds(box2)
+    height1, height2 = bottom1 - top1, bottom2 - top2
+    if height1 <= 0 or height2 <= 0:
+        return False
+    overlap = min(bottom1, bottom2) - max(top1, top2)
+    return overlap > overlap_ratio * min(height1, height2)
+
+
+def merge_boxes(boxes: list[Box]) -> list[Box]:
+    """把同一行、且挨得够近的框合并成一个。"""
     if len(boxes) < 2:
         return boxes
 
-    # paddleocr cannot detect long textbox
-    # so if we find two boxes are on the same line
-    # then we combine them
-    # by take the leftmost box's left and the rightmost box's right
+    # 先按 (上边界, 左边界) 排序，保证同一行的框相邻且从左到右
+    ordered = sorted(boxes, key=lambda b: (box_bounds(b)[1], box_bounds(b)[0]))
 
-    new_boxes = []
-    last_box = None
-    for box in boxes:
-        # [[90.0, 9.0], [405.0, 9.0], [405.0, 36.0], [90.0, 36.0]]
-        if last_box:
-            if is_same_line(last_box, box, image.shape[:2]):
-                leftmost = [
-                    min(last_box[0][0], box[0][0]),
-                    min(last_box[0][1], box[0][1]),
-                ]
-                rightmost = [
-                    max(last_box[1][0], box[1][0]),
-                    max(last_box[2][1], box[2][1]),
-                ]
-                last_box = [
-                    leftmost,
-                    [rightmost[0], leftmost[1]],
-                    rightmost,
-                    [leftmost[0], rightmost[1]],
-                ]
-            else:
-                new_boxes.append(last_box)
-                last_box = box
+    merged: list[Box] = []
+    current = ordered[0]
+    for box in ordered[1:]:
+        left, top, right, bottom = box_bounds(current)
+        next_left, next_top, next_right, next_bottom = box_bounds(box)
+        # 两个区间之间的真实水平距离，重叠时为负。
+        # 不能直接写 next_left - right：排序是按上边界来的，同一行里
+        # 上边界差一两个像素就可能把靠右的框排到靠左的前面，那样算出来
+        # 是个大负数，"间距够近"的判断就永远成立，远处的噪点会被并进正文。
+        gap = max(left, next_left) - min(right, next_right)
+        line_height = max(bottom - top, next_bottom - next_top)
+        if is_same_line(current, box) and gap <= MAX_MERGE_GAP_RATIO * line_height:
+            current = make_box(
+                min(left, next_left), min(top, next_top),
+                max(right, next_right), max(bottom, next_bottom),
+            )
         else:
-            last_box = box
-    if last_box:
-        new_boxes.append(last_box)
+            merged.append(current)
+            current = box
+    merged.append(current)
 
-    # sort by y
-    new_boxes.sort(key=lambda x: x[0][1])
-
-    return new_boxes
+    merged.sort(key=lambda b: box_bounds(b)[1])
+    return merged
 
 
-def cut_long_textbox(box: list[list[float, float]], threshold: int = 320, max_padding: int = 20) -> list[list[list[float, float]]]:
-    # paddleocr cannot detect long textbox
-    # maximum width is 320
+def drop_noise_boxes(boxes: list[Box]) -> list[Box]:
+    """丢掉明显不是文本行的小框。"""
+    if not boxes:
+        return boxes
 
-    # [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
-    left = box[0][0]
-    top = box[0][1]
-    right = box[2][0]
-    bottom = box[2][1]
-    width = right - left
-    cut_into = int(width // threshold + 1)
-    if cut_into == 1:
-        return [box]
+    heights = [box_bounds(b)[3] - box_bounds(b)[1] for b in boxes]
+    tallest = max(heights)
+    if tallest <= 0:
+        return []
 
-    cut_size = int(width // cut_into + 1)
-    # (2 * padding + cut_size) cannot exceed threshold
-    padding = min([max_padding, (threshold - cut_size) // 2])
-
-    cut_boxes = []
-    for i in range(cut_into):
-        box_left = max([left, left + i * cut_size - padding])
-        box_right = min([right, box_left + cut_size + padding])
-        cut_boxes.append([
-            [box_left, top],
-            [box_right, top],
-            [box_right, bottom],
-            [box_left, bottom],
-        ])
-    return cut_boxes
+    kept = []
+    for box, height in zip(boxes, heights):
+        left, _, right, _ = box_bounds(box)
+        if height < MIN_BOX_HEIGHT_RATIO * tallest:
+            continue
+        if right - left < MIN_BOX_WIDTH_RATIO * height:
+            continue
+        kept.append(box)
+    return kept
 
 
-def textbox_at_center(box: list[list[float, float]], image_size: tuple[int, int], tolerance: int = 0.05) -> bool:
-    # box = [[19.0, 12.0], [1556.0, 12.0], [1556.0, 42.0], [19.0, 42.0]]
-    # image_size = [1920, 1080]
-    center_x = (box[0][0] + box[1][0]) / 2
-    # center_y = (box[0][1] + box[2][1]) / 2
-    image_width = image_size[1]
-    # image_height = image_size[0]
-    at_center = abs(center_x - image_width / 2) < tolerance * image_width
-    if not at_center:
-        logging.warning(f'[OCR]\t对话框不在中央: x={center_x}, w={image_width}, r={abs(center_x - image_width / 2) / image_width:.2f}')
-    return at_center
+def _is_centered(left: float, right: float, image_width: int, tolerance: float) -> bool:
+    center = (left + right) / 2
+    offset = abs(center - image_width / 2)
+    if offset > tolerance * image_width:
+        logging.debug(
+            f'[OCR]	文本未居中，字应该还没出全: '
+            f'x={center:.0f}, w={image_width}, 偏移={offset / image_width:.2f}'
+        )
+        return False
+    return True
 
 
-def combine_text_core(text1: str, text2: str) -> str:
-    comp1 = text1[-3:]
-    comp2 = text2[:3]
-    unique = set(comp1 + comp2)
+def boxes_at_center(
+        boxes: list[Box],
+        image_width: int,
+        tolerance: float = 0.06,
+        per_line: bool = True,
+) -> bool:
+    """判断这一帧的字是不是已经出全了。
 
-    if len(unique) == len(comp1) + len(comp2):
-        return text1 + text2
+    per_line=True：每行都要各自居中（chat / idle）。
+    per_line=False：只要整块居中就行。type2 是整块居中、行内左对齐，
+    第二行天生靠左，逐行检查会把所有多行的 type2 字幕都判成"还没打完"。
+    """
+    if not boxes:
+        return False
 
-    dup = set(comp1) & set(comp2)
-    # first_dup = any(i for i in comp2 if i in dup)
-    for i in comp2:
-        if i in dup:
-            first_dup = i
-            break
-    try:
-        idx1 = text1.rfind(first_dup)
-        idx2 = text2.find(first_dup)
-        return text1[:idx1] + text2[idx2:]
-    except UnboundLocalError:
-        return text1 + text2
+    bounds = [box_bounds(b) for b in boxes]
+    if not per_line:
+        return _is_centered(
+            min(b[0] for b in bounds), max(b[2] for b in bounds), image_width, tolerance)
+
+    return all(_is_centered(b[0], b[2], image_width, tolerance) for b in bounds)
 
 
-def combine_texts(rec_results: list[list[tuple[str, float]]], boxes: list[list[list[float, float]]], image: np.ndarray) -> str:
-    # text = ''
-    # for result in results:
-    #     content, prob = result[0]
-    #     if text and text[-1] == content[0]:
-    #         # because of padding
-    #         content = content[1:]
-    #     text += content
-    text = ''
-    pairs = zip(rec_results, boxes)
-    last_box = None
-    for result, box in pairs:
-        content, prob = result[0]
-        if last_box:
-            if is_same_line(last_box, box, image.shape[:2]):
-                text = combine_text_core(text, content)
-                last_box = box
-            else:
-                text += content
-        else:
-            text += content
-            last_box = box
-    return text
+def detect_boxes(image: np.ndarray) -> list[Box]:
+    engine = get_engine()
+    with engine_call_lock:
+        result = engine(image, use_det=True, use_cls=False, use_rec=False)
+    # RapidOCR 没找到字时 boxes 是 None，找到了是 N×4×2 的 float32 数组
+    if result.boxes is None or len(result.boxes) == 0:
+        return []
+    return drop_noise_boxes(merge_boxes(result.boxes.tolist()))
+
+
+def recognize(images: list[np.ndarray]) -> list[str]:
+    """批量识别，返回与输入等长的文本列表。"""
+    if not images:
+        return []
+    from rapidocr.ch_ppocr_rec import TextRecInput
+
+    engine = get_engine()
+    with engine_call_lock:
+        result = engine.text_rec(TextRecInput(img=images))
+    return [text or '' for text in result.txts]
+
+
+def do_ocr(image: np.ndarray, per_line_centered: bool = True) -> str:
+    """对已经裁好的对话区域做识别，返回拼好的整段文本。"""
+    if image is None or image.size == 0:
+        return ''
+
+    image = filter_white(image)
+
+    boxes = detect_boxes(image)
+    if not boxes:
+        logging.debug('[OCR]\t未识别到对话框')
+        return ''
+
+    if not boxes_at_center(boxes, image.shape[1], per_line=per_line_centered):
+        return ''
+
+    crops = [crop(image, tuple(int(v) for v in box_bounds(box))) for box in boxes]
+    crops = [c for c in crops if c.size > 0]
+    if not crops:
+        return ''
+
+    return ''.join(recognize(crops))
 
 
 def do_ocr_raw(image: np.ndarray) -> str:
-    results = ppocr.ocr(image, rec=True, det=False, cls=False)
-    result = results[0]
-    if not result:
-        return ''
-    text = result[0][0]
-    return text
+    """跳过检测，直接把整张图当成一行来识别。"""
+    texts = recognize([image])
+    return texts[0] if texts else ''
 
 
-def do_ocr(image: np.ndarray) -> str:
-    # scale image
-    # scale = scales[gi.resolution]
-    # image = cv2.resize(
-    #     image,
-    #     (0, 0),
-    #     fx=scale,
-    #     fy=scale,
-    #     interpolation=cv2.INTER_CUBIC
-    # )
-
-    # DO NOT SCALE
-    # WORSE PERFORMANCE
-
-    # filter white
-    image = filter_white(image)
-
-    text_boxes = get_textbox(image)
-    if not text_boxes:
-        logging.warning(f'[OCR]\t未识别到对话框！')
-        return ''
-
-    done_print = textbox_at_center(text_boxes[0], image.shape[:2])
-    if not done_print:
-        logging.warning(f'[OCR]\t因为识别对话框未居中，我猜字还没出全')
-        return ''
-
-    # new_boxes = []
-    # for box in text_boxes:
-    #     new_boxes.extend(
-    #         cut_long_textbox(
-    #             box,
-    #             # max_padding=int(paddings[gi.resolution] / scales[gi.resolution])
-    #             max_padding=paddings[gi.resolution]
-    #         )
-    #     )
-
-    # skip this
-    new_boxes = text_boxes
-
-    images = []
-    for box in new_boxes:
-        images.append(crop_image(image, (
-            int(box[0][0]),
-            int(box[0][1]),
-            int(box[2][0]),
-            int(box[2][1]),
-        )))
-
-    # results = ppocr.ocr(
-    #     images,
-    #     rec=True,
-    #     # det_max_side_len=max_right - max_left,
-    #     det=False,
-    #     # det: use text detection or not. If False, only rec will be exec.
-    #     cls=False,
-    #     # cls: use angle classifier or not. Default is True.
-    #     # If True, the text with rotation of 180 degrees can be recognized.
-    #     # If no text is rotated by 180 degrees, use cls=False to get better performance.
-    #     # max_text_length=100,
-    # )
-
-    results = [
-        # do this to ensure every piece of cropped image is processed
-        ppocr.ocr(
-            image,
-            rec=True,
-            det=False,
-            cls=False,
-        )[0]
-        for image in images
-    ]
-
-    # for result in results:
-    # result = results[0]
-    if not results[0]:
-        # continue
-        return ''
-
-    text = combine_texts(results, new_boxes, image)
-    return text
+def ocr_dialog(
+        image: np.ndarray,
+        area: tuple[int, int, int, int],
+        per_line_centered: bool = True,
+) -> Optional[str]:
+    text = do_ocr(crop(image, area), per_line_centered)
+    return text or None

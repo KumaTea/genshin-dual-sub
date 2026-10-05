@@ -1,32 +1,35 @@
 import json
-from share.session import config
+import logging
+from typing import Optional
 
+from cpl.process import reversed_map_file
 
-data_path = config['general']['data_path']
-output_path = f'{data_path}/output'
-map_file = f'{output_path}/ReversedMap.json'
+# 长度超过这个值的都归到同一个桶里，避免桶太稀疏
+MAX_LENGTH = 100
 
 
 class LevInfo:
     def __init__(self):
-        self.map: dict[str, int] = {}
-        self.len_map: dict[int, dict[str, int]] = {}
+        self.map: dict[str, str] = {}
+        # 按文本长度分桶：长度差太多的两句话不可能是同一句
+        self.len_map: dict[int, dict[str, str]] = {}
         self.last_query: str = ''
-        self.last_result: str = '0'
+        self.last_result: Optional[str] = None
 
-        self.load()
-
-    def load(self):
-        with open(map_file, 'r', encoding='utf-8') as f:
+    def load(self, path: Optional[str] = None) -> None:
+        path = path or reversed_map_file()
+        with open(path, 'r', encoding='utf-8') as f:
             self.map = json.load(f)
-        # pbar = tqdm(self.map)
-        # pbar.set_description('Building ReversedMap...')
-        # for key in pbar:
-        for key in self.map:
-            len_key = len(key) if len(key) < 100 else 100
-            if len_key not in self.len_map:
-                self.len_map[len_key] = {}
-            self.len_map[len_key][key] = self.map[key]
+
+        self.len_map = {}
+        for key, value in self.map.items():
+            bucket = min(len(key), MAX_LENGTH)
+            self.len_map.setdefault(bucket, {})[key] = value
+        logging.info(f'[LEV]\t索引载入完成，共 {len(self.map)} 条')
+
+    def reset(self) -> None:
+        self.last_query = ''
+        self.last_result = None
 
 
 lev = LevInfo()

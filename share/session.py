@@ -1,21 +1,19 @@
 import logging
-import configparser
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
-
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(f'config.ini', encoding='utf-8')
+from share.config import settings
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.INFO,
+    level=getattr(logging, settings.get('general', 'log_level').upper(), logging.INFO),
     datefmt='%Y-%m-%d %H:%M:%S')
 
-# disable ppocr logs
+# 第三方库的日志太吵
 logging.getLogger('ppocr').setLevel(logging.ERROR)
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 scheduler = BackgroundScheduler()
-scheduler.start()
 
-# disable apscheduler logs
-logging.getLogger('apscheduler').setLevel(logging.WARNING)
+# 兼容旧代码：config['general']['data_path'] 仍可用
+config = settings.parser

@@ -3,14 +3,34 @@ name = "genshin-dual-sub"
 version = "1.0.0a0"
 description = "原神双语字幕"
 readme = "README.md"
-requires-python = ">=3.8"
+# 代码里用了 list[str] / dict[str, str] 这类内置泛型标注，
+# 以及 X | None 之类的写法，原来写 >=3.8 是不准的
+requires-python = ">=3.12"
 dependencies = [
     "apscheduler<4.0.0a0",
     "dxcam>=0.0.5",
     "levenshtein>=0.25.1",
-    "onnxocr>=2025.5",
+    "opencv-python>=4.9",
+    "openvino>=2024.0",
     "psutil>=6.0.0",
     "pygame>=2.6.1",
     "pykakasi>=2.3.0",
     "pywin32>=307",
+    "rapidocr>=3.9.2,<4",
 ]
+
+[project.optional-dependencies]
+progress = ["tqdm>=4.66"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+default = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]

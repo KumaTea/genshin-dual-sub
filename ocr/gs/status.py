@@ -1,50 +1,33 @@
 import logging
-from ocr.session import gi
-from ocr.imgtools import has_color
-from ovl.handler import ovl_handler
+
 from ocr.gs.screen import take_screenshot
+from ocr.layout import detect_layout
+from ocr.session import gi
+from ovl.handler import clear_subtitle
 
-
-speaker_color = (255, 195, 0)
-idle_speaker_color = (241, 183, 3)
+LAYOUT_NAMES = {'chat': '剧情对话', 'idle': '闲聊', 'type2': '旁白/通讯'}
 
 
 def check_talking() -> bool:
+    """判断当前是否在对话，顺便记下是哪种聊天版式。"""
     if not gi.running:
-        talking = False
-        reason = '未运行'
+        layout, reason = None, '游戏未运行'
     elif not gi.foreground:
-        talking = False
-        reason = '不在前台'
+        layout, reason = None, '游戏不在前台'
     else:
-        # image = grab_screenshot(*gi.coords)
         image = take_screenshot()
-        if image is None or not image.any():
-            # talking = False
-            # reason = '截图失败'
-            # don't change state
-            # logging.warning(f'[OCR]\t截图失败: {image=}')
+        if image is None:
+            # 抓不到画面时不改状态，否则字幕会闪
             return gi.talking
-        else:
-            # result = do_ocr_raw(crop_image(image, speaker_area[gi.resolution]))
-            # talking = bool(result)
+        layout = detect_layout(image)
+        reason = LAYOUT_NAMES.get(layout, '对话区没有角色名')
 
-            # not using OCR
-            # checking if the color of the speaker name exists
-            # reducing 99% of time
-            chat_talking = has_color(image, color=speaker_color)
-            idle_talking = has_color(image, color=idle_speaker_color)
-            talking = chat_talking or idle_talking
-            reason = '检测对话区角色名称' + '' if not talking else (' (' + ('对话中' if chat_talking else '闲聊中') + ')')
+    talking = layout is not None
+    if talking == gi.talking and layout == gi.layout:
+        return talking
 
-    before = gi.talking
-    if talking == before:
-        return before
-
-    # state changed
-    gi.talking = talking
-    logging.warning(f'[OCR]\t对话状态改变为：{gi.talking}\t原因：{reason}')
+    gi.talking, gi.layout = talking, layout
+    logging.info(f'[OCR]\t对话状态：{talking}\t原因：{reason}')
     if not talking:
-        # clear dialog text
-        ovl_handler([])
-    return gi.talking
+        clear_subtitle()
+    return talking

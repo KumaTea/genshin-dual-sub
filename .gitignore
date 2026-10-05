@@ -2,6 +2,6 @@
 .venv
 data
 uv.lock
-debugs.py
+debug*
 config.ini
 __pycache__
