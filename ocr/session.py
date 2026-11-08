@@ -20,6 +20,20 @@ _engine_lock = threading.Lock()
 # OpenVINO 引擎每个模型也只有一个推理请求。调用方要先拿这把锁。
 engine_call_lock = threading.Lock()
 
+# 推理后端，取值同 rapidocr.EngineType：'openvino' / 'onnxruntime' ...
+# OpenVINO 和 onnxruntime 结果一样，在 Intel CPU 上更快。
+INFERENCE_ENGINE = 'openvino'
+
+
+def fixed_rec_shapes() -> bool:
+    """识别输入要不要补宽到固定的几档（见 ocr.ocr.pad_for_rec）。
+
+    只有 OpenVINO 需要：它的 CPU 插件每个新输入形状都要留约 20MB 不放。
+    onnxruntime 同样的模型同样的输入不涨内存，补宽只会白白多算 10% 左右。
+    """
+    return INFERENCE_ENGINE == 'openvino'
+
+
 # 和 onnxocr 4.x 的默认参数对齐。RapidOCR 自己的默认值不一样
 # （会先缩放输入图、做膨胀、阈值也不同），不改的话识别结果会变。
 ONNXOCR_4X = {
@@ -93,9 +107,25 @@ def _build_engine():
     engine = RapidOCR(params={
         **ONNXOCR_4X,
         'Det.limit_side_len': max(64, bottom - top),
-        # OpenVINO 和 onnxruntime 结果一样，在 Intel CPU 上更快
-        **{f'{key}.engine_type': EngineType.OPENVINO for key in ('Det', 'Cls', 'Rec')},
+        **{f'{key}.engine_type': EngineType(INFERENCE_ENGINE) for key in ('Det', 'Cls', 'Rec')},
         'EngineConfig.openvino.performance_hint': 'LATENCY',
     })
+    _plain_det_config(engine)
     logging.info(f'[OCR]\t模型加载完成，用时 {time.perf_counter() - started:.1f}s')
     return engine
+
+
+def _plain_det_config(engine) -> None:
+    """把检测器的 mean / std 从 omegaconf 的 ListConfig 换成普通 list。
+
+    RapidOCR 每次检测都会 np.array(mean)。numpy 会先去 ListConfig 上找
+    __array__ 之类的属性，ListConfig 每找一次就构造并抛出一个
+    ConfigAttributeError（每帧 12 个），numpy 接住之后接着往下走。
+    这些异常的 traceback 和栈帧互相引用成环，整条调用栈连同 18MB 的截图
+    都要等循环垃圾回收才释放，平白多占一两百 MB，抛异常本身也费 CPU。
+    """
+    detector = getattr(engine, 'text_det', None)
+    for name in ('mean', 'std'):
+        value = getattr(detector, name, None)
+        if value is not None:
+            setattr(detector, name, [float(v) for v in value])

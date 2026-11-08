@@ -13,17 +13,33 @@
   发光图标和血条数字，阈值松了它们会被拼进识别结果。
 * 识别是批量做的。逐张调用会让推理引擎每次重新分配输入张量，
   两行文本的开销几乎翻倍。
+* 送进识别模型的图宽度要取整到固定的几档（见 pad_for_rec），否则内存会一直涨。
 """
 
 import logging
+import math
 from typing import Optional
 
+import cv2
 import numpy as np
 
 from ocr.imgtools import crop, filter_white
-from ocr.session import engine_call_lock, get_engine
+from ocr.session import engine_call_lock, fixed_rec_shapes, get_engine
 
 Box = list[list[float]]
+
+# 识别模型的输入高度（RapidOCR 的 rec_img_shape 是 3x48x320）
+REC_HEIGHT = 48
+# 识别模型的输入宽度向上取整到这个值的倍数。
+#
+# OpenVINO 的 CPU 插件每遇到一个没见过的输入形状，就要为它准备一套算子和缓冲区，
+# 每套约 20MB，而且一直留着不放。字幕每句宽度都不一样，同一句在相邻两帧里
+# 也会差一两个像素，不取整的话每句字幕要涨几十 MB，玩十分钟就是好几个 GB。
+# 取整之后形状最多就那么十来种，内存涨到几百 MB 就停了。
+#
+# 必须是 48 的倍数：RapidOCR 用 int(48 * (宽 / 48)) 算输入宽度，
+# 宽度不是 48 的倍数时浮点误差会让结果差 1，又变成一个新形状。
+REC_WIDTH_STEP = 384
 
 # 同一行的两个框，水平间距不超过行高的多少倍才合并
 MAX_MERGE_GAP_RATIO = 2.0
@@ -160,12 +176,36 @@ def detect_boxes(image: np.ndarray) -> list[Box]:
     return drop_noise_boxes(merge_boxes(result.boxes.tolist()))
 
 
+def pad_for_rec(image: np.ndarray) -> np.ndarray:
+    """缩放到识别模型的高度，再在右侧补黑，让宽度落到 REC_WIDTH_STEP 的整数倍上。
+
+    缩放方式和 RapidOCR 内部的一样（等比缩到 48 高、宽度向上取整、双线性），
+    所以文字部分的像素不变，RapidOCR 拿到之后也不会再缩放一次。
+    补的是黑色：滤白之后文字周围本来就是黑的。
+    """
+    height, width = image.shape[:2]
+    if height == 0 or width == 0:
+        return image
+    scaled_width = max(1, math.ceil(width * REC_HEIGHT / height))
+    if (height, width) != (REC_HEIGHT, scaled_width):
+        image = cv2.resize(image, (scaled_width, REC_HEIGHT))
+
+    target_width = math.ceil(scaled_width / REC_WIDTH_STEP) * REC_WIDTH_STEP
+    if target_width == scaled_width:
+        return image
+    padded = np.zeros((REC_HEIGHT, target_width) + image.shape[2:], dtype=image.dtype)
+    padded[:, :scaled_width] = image
+    return padded
+
+
 def recognize(images: list[np.ndarray]) -> list[str]:
     """批量识别，返回与输入等长的文本列表。"""
     if not images:
         return []
     from rapidocr.ch_ppocr_rec import TextRecInput
 
+    if fixed_rec_shapes():
+        images = [pad_for_rec(image) for image in images]
     engine = get_engine()
     with engine_call_lock:
         result = engine.text_rec(TextRecInput(img=images))

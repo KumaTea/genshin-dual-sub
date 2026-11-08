@@ -18,6 +18,12 @@ from ovl.fonts import get_font
 
 # 正文与注音、注音与注音之间的间距（相对于注音字号）
 ROW_GAP_RATIO = 0.05
+# 长句缩小字号时按这个步长向下取整。不取整的话每句长度不同的字幕
+# 都会算出一个新字号，各新建一个字体
+FONT_SIZE_STEP = 4
+# 最多同时缓存几个字体，多了就扔掉最久没用的。
+# 游戏自带的日文字体有 11MB，每个 pygame 字体对象约占 1.5MB
+MAX_CACHED_FONTS = 8
 
 
 class Renderer:
@@ -34,9 +40,20 @@ class Renderer:
 
     def font(self, size: int, ruby: bool = False) -> pygame.font.Font:
         key = (size, ruby)
-        if key not in self._font_cache:
-            self._font_cache[key] = get_font(self.font_path, size)
-        return self._font_cache[key]
+        # dict 保持插入顺序：每次用到就挪到末尾，开头的就是最久没用的
+        font = self._font_cache.pop(key, None)
+        if font is None:
+            font = get_font(self.font_path, size)
+            while len(self._font_cache) >= MAX_CACHED_FONTS:
+                del self._font_cache[next(iter(self._font_cache))]
+        self._font_cache[key] = font
+        return font
+
+    def _text_size(self, scale: float) -> int:
+        return max(8, round(self.font_size * scale))
+
+    def _ruby_size(self, scale: float) -> int:
+        return max(6, int(self.ruby_size * scale))
 
     def resize(self, width: int, height: int) -> None:
         self.width, self.height = width, height
@@ -54,13 +71,17 @@ class Renderer:
         if not text:
             return 1.0
 
+        limit = self.width * 0.98
         scale = 1.0
         for _ in range(8):
-            font = self.font(max(8, int(self.font_size * scale)))
+            font = self.font(self._text_size(scale))
             width = sum(font.size(s[0])[0] for s in segments)
-            if width <= self.width * 0.98:
+            if width <= limit:
                 return scale
-            scale *= max(0.5, (self.width * 0.98) / max(1, width))
+            scale *= max(0.5, limit / max(1, width))
+            # 向下取整到 FONT_SIZE_STEP，字号就只有十几种可能
+            size = int(self.font_size * scale) // FONT_SIZE_STEP * FONT_SIZE_STEP
+            scale = max(8, size) / self.font_size
         return scale
 
     def layout(self, segments: list[Segment]) -> list[tuple[pygame.Surface, pygame.Rect]]:
@@ -68,8 +89,8 @@ class Renderer:
             return []
 
         scale = self._fit_scale(segments)
-        font = self.font(max(8, int(self.font_size * scale)))
-        ruby_font = self.font(max(6, int(self.ruby_size * scale)), ruby=True)
+        font = self.font(self._text_size(scale))
+        ruby_font = self.font(self._ruby_size(scale), ruby=True)
         ruby_height = ruby_font.get_height()
         gap = max(1, int(ruby_height * ROW_GAP_RATIO))
 

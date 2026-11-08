@@ -94,3 +94,22 @@ def test_ruby_is_centred_over_its_base(renderer):
 
 def test_empty_segments_render_nothing(renderer):
     assert renderer.layout([]) == []
+
+
+def test_shrunk_font_size_is_snapped(renderer):
+    """缩小后的字号落在固定的几档上，不会每句字幕都新建一个字体。"""
+    from ovl.render import FONT_SIZE_STEP
+
+    for repeat in (25, 31, 37, 44, 53):
+        scale = renderer._fit_scale([('長い' * repeat, ())])
+        assert scale < 1
+        assert renderer._text_size(scale) % FONT_SIZE_STEP == 0
+
+
+def test_font_cache_is_bounded():
+    from ovl.render import MAX_CACHED_FONTS
+
+    renderer = Renderer(800, 160, None, 40, 20)
+    for repeat in range(10, 80):
+        renderer.layout([('長い' * repeat, ('ながい',))])
+    assert len(renderer._font_cache) <= MAX_CACHED_FONTS
